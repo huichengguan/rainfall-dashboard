@@ -37,6 +37,7 @@ jobs:
         run: |
           python update_daily.py
           python export_js_cache.py
+        continue-on-error: true
 
       - name: Commit & Push Updated Data
         run: |
