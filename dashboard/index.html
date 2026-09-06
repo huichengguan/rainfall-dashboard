@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Malaysia & Indonesia Daily Rainfall Monitoring Dashboard (2010–Present)</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Chart.js for interactive historical graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <!-- Header Banner -->
+    <header class="dashboard-header">
+        <div class="header-left">
+            <div class="header-title">
+                <h1>Malaysia & Indonesia Rainfall Monitoring Dashboard</h1>
+                <p id="kpi-date">Historical ECMWF ERA5 & Daily Operational Monitor (2010–Present)</p>
+            </div>
+        </div>
+        <div class="header-right">
+            <button class="btn btn-secondary" onclick="exportTableToCSV()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Export CSV
+            </button>
+            <button class="btn btn-primary" onclick="location.reload()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                Refresh
+            </button>
+        </div>
+    </header>
+
+    <div class="dashboard-container">
+
+        <!-- KPI Grid -->
+        <section class="kpi-grid">
+            <div class="kpi-card">
+                <span class="kpi-label">Malaysia Avg (Latest Day)</span>
+                <span class="kpi-value" id="kpi-my-val">-</span>
+                <span class="kpi-sub">Across 15 states & FT</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-label">Indonesia Avg (Latest Day)</span>
+                <span class="kpi-value" id="kpi-id-val">-</span>
+                <span class="kpi-sub">Across 24 major island zones</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-label">Driest Region Today</span>
+                <span class="kpi-value" id="kpi-dry-val" style="color: #ef4444; font-size: 20px;">-</span>
+                <span class="kpi-sub" id="kpi-dry-sub">-</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-label">Wettest Region Today</span>
+                <span class="kpi-value" id="kpi-wet-val" style="color: #16a34a; font-size: 20px;">-</span>
+                <span class="kpi-sub" id="kpi-wet-sub">-</span>
+            </div>
+        </section>
+
+        <!-- Custom Color Scale Legend -->
+        <section class="legend-card">
+            <div class="legend-title">Average Rainfall (mm / day) Scale:</div>
+            <div class="legend-scale">
+                <span class="legend-chip" style="background-color: #991b1b; color: #fff;">&lt; 1.0 (Extreme Dry)</span>
+                <span class="legend-chip" style="background-color: #ef4444; color: #fff;">1.0 - 2.5</span>
+                <span class="legend-chip" style="background-color: #fb923c; color: #fff;">2.5 - 4.0</span>
+                <span class="legend-chip" style="background-color: #fed7aa; color: #7c2d12;">4.0 - 5.5</span>
+                <span class="legend-chip" style="background-color: #e2e8f0; color: #1e293b; border: 2px solid #94a3b8;">5.5 - 6.5 Neutral / Average</span>
+                <span class="legend-chip" style="background-color: #bbf7d0; color: #14532d;">6.5 - 8.0</span>
+                <span class="legend-chip" style="background-color: #86efac; color: #14532d;">8.0 - 11.0</span>
+                <span class="legend-chip" style="background-color: #4ade80; color: #14532d;">11.0 - 15.0</span>
+                <span class="legend-chip" style="background-color: #16a34a; color: #fff;">15.0 - 20.0</span>
+                <span class="legend-chip" style="background-color: #14532d; color: #fff;">&gt; 20.0 Extreme Wet</span>
+            </div>
+        </section>
+
+        <!-- Controls Bar -->
+        <section class="controls-bar">
+            <!-- View Mode Toggle -->
+            <div class="segmented-control">
+                <button class="segmented-btn active" data-mode="monthly" onclick="setMode('monthly')">Monthly Averages</button>
+                <button class="segmented-btn" data-mode="weekly" onclick="setMode('weekly')">Weekly Averages</button>
+                <button class="segmented-btn" data-mode="daily" onclick="setMode('daily')">Daily Matrix: 14 Days</button>
+                <button class="segmented-btn" data-mode="state_matrix" onclick="setMode('state_matrix')">State Matrix: Year &times; Month</button>
+            </div>
+
+            <!-- Region Filter -->
+            <div class="segmented-control" id="region-filter-container">
+                <button class="segmented-btn active" data-group="all" onclick="setGroup('all')">All</button>
+                <button class="segmented-btn" data-group="Peninsular Malaysia" onclick="setGroup('Peninsular Malaysia')">Peninsular</button>
+                <button class="segmented-btn" data-group="Sabah & Sarawak" onclick="setGroup('Sabah & Sarawak')">Sabah & Sarawak</button>
+                <button class="segmented-btn" data-group="Sumatera" onclick="setGroup('Sumatera')">Sumatera</button>
+                <button class="segmented-btn" data-group="Kalimantan" onclick="setGroup('Kalimantan')">Kalimantan</button>
+                <button class="segmented-btn" data-group="Sulawesi" onclick="setGroup('Sulawesi')">Sulawesi</button>
+                <button class="segmented-btn" data-group="Papua" onclick="setGroup('Papua')">Papua</button>
+            </div>
+
+            <!-- State Dropdown (for State Matrix Mode) -->
+            <div class="filters-group" id="state-select-container" style="display: none;">
+                <label for="state-select" style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Select State:</label>
+                <select id="state-select" class="select-control"></select>
+            </div>
+
+            <!-- Year Dropdown (for Monthly Mode) -->
+            <div class="filters-group" id="year-select-container">
+                <label for="year-select" style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Year:</label>
+                <select id="year-select" class="select-control"></select>
+            </div>
+        </section>
+
+        <!-- State Matrix Filters (State Multi-Select, Years & Months) -->
+        <section class="matrix-filter-bar" id="matrix-filter-bar" style="display: none;">
+            <!-- Multi-State Picker Row -->
+            <div class="matrix-state-filter-box">
+                <div class="matrix-state-filter-header">
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <span class="filter-label" style="margin-bottom: 0;">Select States (Click to toggle on/off):</span>
+                        <span class="selected-state-count-badge" id="selected-state-count-badge">1 State Selected</span>
+                        <button class="pill-btn" id="toggle-state-picker-btn" type="button" onclick="toggleStatePicker()" style="font-weight: 700; background: #e0f2fe; color: #0369a1; border-color: #bae6fd;">▲ Hide State Picker</button>
+                    </div>
+                    <div class="state-preset-group">
+                        <button class="pill-btn" type="button" onclick="selectRegionStates('Peninsular Malaysia')">Peninsular</button>
+                        <button class="pill-btn" type="button" onclick="selectRegionStates('Sabah & Sarawak')">Sabah & Sarawak</button>
+                        <button class="pill-btn" type="button" onclick="selectRegionStates('Sumatera')">Sumatera</button>
+                        <button class="pill-btn" type="button" onclick="selectRegionStates('Kalimantan')">Kalimantan</button>
+                        <button class="pill-btn" type="button" onclick="selectRegionStates('Sulawesi')">Sulawesi</button>
+                        <button class="pill-btn" type="button" onclick="selectRegionStates('Papua')">Papua</button>
+                        <button class="pill-btn" type="button" onclick="selectAllStates()">All 39 States</button>
+                        <button class="pill-btn" type="button" onclick="clearStateSelection()" style="color: #ef4444; border-color: #fca5a5;">Reset to First</button>
+                    </div>
+                </div>
+                
+                <!-- Region-grouped State Pills Container -->
+                <div class="matrix-state-pills-container" id="matrix-state-pills-container">
+                    <!-- Populated by JavaScript -->
+                </div>
+
+                <!-- Multi-State View Toggle (visible when >1 state selected) -->
+                <div class="matrix-multi-state-options" id="matrix-multi-state-options" style="display: none;">
+                    <span style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Multi-State Display:</span>
+                    <div class="segmented-control">
+                        <button class="segmented-btn active" id="btn-view-combined" type="button" onclick="setMultiStateView('combined')">Combined Average Matrix</button>
+                        <button class="segmented-btn" id="btn-view-breakdown" type="button" onclick="setMultiStateView('breakdown')">Combined + Individual States</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Years & Months Row -->
+            <div class="matrix-filter-row" style="margin-top: 14px;">
+                <div class="filter-col" style="flex: 1.1; min-width: 320px;">
+                    <span class="filter-label">Filter Years (Click to toggle on/off)</span>
+                    <div class="year-pill-selector" id="year-pill-selector">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                    <div class="preset-group" style="margin-top: 4px;">
+                        <button class="pill-btn active" data-ypreset="all" onclick="setYearPreset('all')">All 2010–26</button>
+                        <button class="pill-btn" data-ypreset="last5" onclick="setYearPreset('last5')">Last 5 Yrs</button>
+                        <button class="pill-btn" data-ypreset="last10" onclick="setYearPreset('last10')">Last 10 Yrs</button>
+                        <button class="pill-btn" data-ypreset="elnino" onclick="setYearPreset('elnino')">El Niño 15, 16, 26</button>
+                    </div>
+                </div>
+
+                <div class="filter-col" style="flex: 1; min-width: 320px;">
+                    <span class="filter-label">Filter Months (Click to toggle on/off)</span>
+                    <div class="month-pill-selector" id="month-pill-selector">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                    <div class="preset-group" style="margin-top: 4px;">
+                        <button class="pill-btn active" data-mpreset="all" onclick="setMonthPreset('all')">All 12 Months</button>
+                        <button class="pill-btn" data-mpreset="q1" onclick="setMonthPreset('q1')">Q1 Jan–Mar</button>
+                        <button class="pill-btn" data-mpreset="q2" onclick="setMonthPreset('q2')">Q2 Apr–Jun</button>
+                        <button class="pill-btn" data-mpreset="q3" onclick="setMonthPreset('q3')">Q3 / Dry Jul–Sep</button>
+                        <button class="pill-btn" data-mpreset="q4" onclick="setMonthPreset('q4')">Q4 / Monsoon Oct–Dec</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Data Table -->
+        <section class="table-container" id="table-container">
+            <div style="padding: 40px; text-align: center; color: var(--text-secondary);">Loading rainfall data...</div>
+        </section>
+
+    </div>
+
+    <!-- Drilldown Historical Modal -->
+    <div class="modal-overlay" id="drilldown-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h2 id="modal-title" style="font-size: 20px; font-weight: 700; color: var(--text-primary);">State Details</h2>
+                    <p id="modal-subtitle" style="font-size: 12px; color: var(--text-secondary);"></p>
+                </div>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            
+            <div class="chart-box">
+                <canvas id="drilldown-chart"></canvas>
+            </div>
+            
+            <div style="font-size: 11.5px; color: var(--text-secondary); text-align: center;">
+                Comparison of 2026 vs prior years and the long-term 2010–2025 climatological normal. Values in mm/day.
+            </div>
+        </div>
+    </div>
+
+    <script src="data_cache.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
